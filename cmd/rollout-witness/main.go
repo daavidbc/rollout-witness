@@ -19,22 +19,22 @@ func main() {
 		Timeout: 3 * time.Second,
 	}
 
-  latencies := []time.Duration[]
+	latencies := []time.Duration{}
 
 	for i := 1; i <= 10; i++ {
-    duration := 20 * time.Milisecond
-    latencies = append(latencies, duration)
 		totalRequests++
 
 		fmt.Println("Request number:", i)
-    
-    start := time.Now()
+
+		start := time.Now()
 
 		response, err := client.Get("http://podinfo.lab.test/readyz")
 
-    duration := time.Since(start)
+		duration := time.Since(start)
 
-    fmt.Println("Duration", duration)
+		latencies = append(latencies, duration)
+
+		fmt.Println("Duration", duration)
 
 		if err != nil {
 			fmt.Println("Request failed:", err)
@@ -59,7 +59,8 @@ func main() {
 	if totalRequests > 0 {
 		failureRate = (float64(totalFailures) / float64(totalRequests)) * 100
 	}
-  fmt.Println(len(latencies))
+
+	fmt.Println(len(latencies))
 	fmt.Println("Rollout Witness Summary")
 	fmt.Println("Total Requests:", totalRequests)
 	fmt.Println("Successful Requests:", successfulRequests)
