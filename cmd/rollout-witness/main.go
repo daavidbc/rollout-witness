@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"net/http"
+	"slices"
 	"time"
 )
 
@@ -65,15 +67,44 @@ func main() {
 	totalFailures := failedRequests + connectionErrors
 
 	averageLatency := time.Duration(0)
+	minLatency := time.Duration(0)
+	maxLatency := time.Duration(0)
+	p95Latency := time.Duration(0)
 
 	if len(latencies) > 0 {
 		averageLatency = totalDuration / time.Duration(len(latencies))
+
+		minLatency = latencies[0]
+		maxLatency = latencies[0]
+
+		for _, duration := range latencies {
+			if duration < minLatency {
+				minLatency = duration
+			}
+
+			if duration > maxLatency {
+				maxLatency = duration
+			}
+		}
+
+		slices.Sort(latencies)
+
+		p95Rank := math.Ceil(0.95 * float64(len(latencies)))
+		p95Index := int(p95Rank) - 1
+
+		p95Latency = latencies[p95Index]
 	}
 
 	totalSuccessfulDuration := time.Duration(0)
 
 	for _, duration := range successfulLatencies {
 		totalSuccessfulDuration += duration
+	}
+
+	averageSuccesfulLatency := time.Duration(0)
+
+	if len(successfulLatencies) > 0 {
+		averageSuccesfulLatency = totalSuccessfulDuration / time.Duration(len(successfulLatencies))
 	}
 
 	if totalRequests > 0 {
@@ -91,4 +122,8 @@ func main() {
 	fmt.Println("Failure Rate:", failureRate, "%")
 	fmt.Println("Average latency:", averageLatency)
 	fmt.Println("Total successful duration:", totalSuccessfulDuration)
+	fmt.Println("Average succesful latency:", averageSuccesfulLatency)
+	fmt.Println("Minimum latency:", minLatency)
+	fmt.Println("Maximum latency:", maxLatency)
+	fmt.Println("P95 latency:", p95Latency)
 }
