@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 	"time"
+  "flag"
 )
 
 func main() {
@@ -21,17 +22,36 @@ func main() {
 		Timeout: 3 * time.Second,
 	}
 
+  url := flag.String(
+    "url",
+    "http://podinfo.lab.test/readyz",
+    "HTTP endpoint to monitor",
+  )
+
+  requests := flag.Int(
+    "requests",
+    10,
+    "Number of HTTP requests",
+  )
+
+  flag.Parse()
+
 	latencies := []time.Duration{}
 	successfulLatencies := []time.Duration{}
 
-	for i := 1; i <= 10; i++ {
+  if *requests <= 0 {
+    fmt.Println("Error: requests must be greater than zero")
+    return
+  }
+
+	for i := 1; i <= *requests; i++ {
 		totalRequests++
 
 		fmt.Println("Request number:", i)
 
 		start := time.Now()
 
-		response, err := client.Get("http://podinfo.lab.test/readyz")
+		response, err := client.Get(*url)
 
 		duration := time.Since(start)
 
