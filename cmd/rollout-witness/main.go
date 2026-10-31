@@ -131,7 +131,6 @@ func main() {
 		failureRate = (float64(totalFailures) / float64(totalRequests)) * 100
 	}
 
-	fmt.Println(len(latencies))
 
 	fmt.Println("Rollout Witness Summary")
 	fmt.Println("Total Requests:", totalRequests)
