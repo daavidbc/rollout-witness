@@ -18,10 +18,6 @@ func main() {
 	failureRate := 0.0
 	totalRequests := 0
 
-	client := &http.Client{
-		Timeout: 3 * time.Second,
-	}
-
   url := flag.String(
     "url",
     "http://podinfo.lab.test/readyz",
@@ -34,7 +30,28 @@ func main() {
     "Number of HTTP requests",
   )
 
+  timeout := flag.Duration(
+    "timeout",
+    3*time.Second,
+    "HTTP Request timeout",
+  )
+
+  interval := flag.Duration(
+    "interval",
+    1*time.Second,
+    "Delay between HTTP requests",
+  )
+
   flag.Parse()
+  
+  if *timeout <= 0 {
+    fmt.Println("Error: timeout must be greather than zero")
+    return
+  }
+
+  client:= &http.Client{
+    Timeout: *timeout,
+  }
 
 	latencies := []time.Duration{}
 	successfulLatencies := []time.Duration{}
@@ -52,6 +69,8 @@ func main() {
 		start := time.Now()
 
 		response, err := client.Get(*url)
+
+    time.Sleep(*interval)
 
 		duration := time.Since(start)
 
