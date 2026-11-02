@@ -106,8 +106,8 @@ func main() {
 			successfulRequests++
 			successfulLatencies = append(successfulLatencies, duration)
 		} else {
-      failedRequests++
-    }
+			failedRequests++
+		}
 
 		fmt.Println("HTTP status:", response.StatusCode)
 		response.Body.Close()
@@ -160,10 +160,11 @@ func main() {
 
 	if len(successfulLatencies) > 0 {
 		averageSuccesfulLatency = totalSuccessfulDuration / time.Duration(len(successfulLatencies))
-    fmt.Println("Average successful latency:", averageSuccesfulLatency)
+
+		fmt.Println("Average successful latency:", averageSuccesfulLatency)
 	} else {
-    fmt.Println("Average successful latency: N/A")
-  }
+		fmt.Println("Average successful latency: N/A")
+	}
 
 	if totalRequests > 0 {
 		failureRate = (float64(totalFailures) / float64(totalRequests)) * 100
@@ -172,9 +173,9 @@ func main() {
 	fmt.Println("Rollout Witness Summary")
 	fmt.Println("Total Requests:", totalRequests)
 	fmt.Println("Successful Requests:", successfulRequests)
-	fmt.Println("HTTP 5xx failures:", failedRequests)
+	fmt.Println("HTTP failures:", failedRequests)
 	fmt.Println("Connection errors:", connectionErrors)
-  fmt.Println("Total failures:", totalFailures)
+	fmt.Println("Total failures:", totalFailures)
 	fmt.Println("Failure Rate:", failureRate, "%")
 	fmt.Println("Average latency:", averageLatency)
 	fmt.Println("Total successful duration:", totalSuccessfulDuration)
@@ -183,6 +184,6 @@ func main() {
 	fmt.Println("P95 latency:", p95Latency)
 
 	if totalFailures > 0 {
-	  os.Exit(1)
+		os.Exit(1)
 	}
 }
