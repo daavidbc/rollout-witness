@@ -1,13 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math"
 	"net/http"
+	"os"
 	"slices"
 	"time"
-  "flag"
-  "os"
 )
 
 func main() {
@@ -19,97 +19,95 @@ func main() {
 	failureRate := 0.0
 	totalRequests := 0
 
-  url := flag.String(
-    "url",
-    "http://podinfo.lab.test/readyz",
-    "HTTP endpoint to monitor",
-  )
+	url := flag.String(
+		"url",
+		"http://podinfo.lab.test/readyz",
+		"HTTP endpoint to monitor",
+	)
 
-  requests := flag.Int(
-    "requests",
-    10,
-    "Number of HTTP requests",
-  )
+	requests := flag.Int(
+		"requests",
+		10,
+		"Number of HTTP requests",
+	)
 
-  timeout := flag.Duration(
-    "timeout",
-    3*time.Second,
-    "HTTP Request timeout",
-  )
+	timeout := flag.Duration(
+		"timeout",
+		3*time.Second,
+		"HTTP Request timeout",
+	)
 
-  interval := flag.Duration(
-    "interval",
-    1*time.Second,
-    "Delay between HTTP requests",
-  )
+	interval := flag.Duration(
+		"interval",
+		1*time.Second,
+		"Delay between HTTP requests",
+	)
 
-  hostHeader := flag.String(
-    "host-header",
-    "podinfo.lab.test",
-    "HTTP Host header for Ingress routing",
-  )
+	hostHeader := flag.String(
+		"host-header",
+		"podinfo.lab.test",
+		"HTTP Host header for Ingress routing",
+	)
 
-  flag.Parse()
-  
-  if *timeout <= 0 {
-    fmt.Println("Error: timeout must be greather than zero")
-    os.Exit(1)
-  }
+	flag.Parse()
 
-  client:= &http.Client{
-    Timeout: *timeout,
-  }
+	if *timeout <= 0 {
+		fmt.Println("Error: timeout must be greather than zero")
+		os.Exit(1)
+	}
+
+	client := &http.Client{
+		Timeout: *timeout,
+	}
 
 	latencies := []time.Duration{}
 	successfulLatencies := []time.Duration{}
 
-  if *requests <= 0 {
-    fmt.Println("Error: requests must be greater than zero")
-    os.Exit(1)
-  }
+	if *requests <= 0 {
+		fmt.Println("Error: requests must be greater than zero")
+		os.Exit(1)
+	}
 
 	for i := 1; i <= *requests; i++ {
 
-    if i > 1 {
-      time.Sleep(*interval)
-    }
+		if i > 1 {
+			time.Sleep(*interval)
+		}
 
 		totalRequests++
 
 		fmt.Println("Request number:", i)
 
-		req, err := http.NewRequest("GET",*url, nil)
+		req, err := http.NewRequest("GET", *url, nil)
 
 		if err != nil {
 			fmt.Println("Request creation failed:", err)
 			os.Exit(1)
-    }
+		}
 
-    req.Host = *hostHeader
+		req.Host = *hostHeader
 
-    start := time.Now()
+		start := time.Now()
 
-    response, err := client.Do(req)
+		response, err := client.Do(req)
 
-    duration := time.Since(start)
+		duration := time.Since(start)
 
-    latencies = append(latencies, duration)
-    fmt.Println("Duration", duration)
+		latencies = append(latencies, duration)
+		fmt.Println("Duration", duration)
 
-    if err != nil {
-      fmt.Println("HTTP request failed:", err)
-      connectionErrors++
-      continue
-    }
-
-		if response.StatusCode >= 500 {
-			failedRequests++
+		if err != nil {
+			fmt.Println("HTTP request failed:", err)
+			connectionErrors++
+			continue
 		}
 
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
 			successfulRequests++
 			successfulLatencies = append(successfulLatencies, duration)
-		}
+		} else {
+      failedRequests++
+    }
 
 		fmt.Println("HTTP status:", response.StatusCode)
 		response.Body.Close()
@@ -162,28 +160,29 @@ func main() {
 
 	if len(successfulLatencies) > 0 {
 		averageSuccesfulLatency = totalSuccessfulDuration / time.Duration(len(successfulLatencies))
-	}
+    fmt.Println("Average successful latency:", averageSuccesfulLatency)
+	} else {
+    fmt.Println("Average successful latency: N/A")
+  }
 
 	if totalRequests > 0 {
 		failureRate = (float64(totalFailures) / float64(totalRequests)) * 100
 	}
-
 
 	fmt.Println("Rollout Witness Summary")
 	fmt.Println("Total Requests:", totalRequests)
 	fmt.Println("Successful Requests:", successfulRequests)
 	fmt.Println("HTTP 5xx failures:", failedRequests)
 	fmt.Println("Connection errors:", connectionErrors)
-	fmt.Println("Total failures:", totalFailures)
+  fmt.Println("Total failures:", totalFailures)
 	fmt.Println("Failure Rate:", failureRate, "%")
 	fmt.Println("Average latency:", averageLatency)
 	fmt.Println("Total successful duration:", totalSuccessfulDuration)
-	fmt.Println("Average succesful latency:", averageSuccesfulLatency)
 	fmt.Println("Minimum latency:", minLatency)
 	fmt.Println("Maximum latency:", maxLatency)
 	fmt.Println("P95 latency:", p95Latency)
 
-  if totalFailures > 0 {
-    os.Exit(1)
-  }
+	if totalFailures > 0 {
+	  os.Exit(1)
+	}
 }
