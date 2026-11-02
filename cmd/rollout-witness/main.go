@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
   "flag"
+  "os"
 )
 
 func main() {
@@ -42,11 +43,17 @@ func main() {
     "Delay between HTTP requests",
   )
 
+  hostHeader := flag.String(
+    "host-header",
+    "podinfo.lab.test",
+    "HTTP Host header for Ingress routing",
+  )
+
   flag.Parse()
   
   if *timeout <= 0 {
     fmt.Println("Error: timeout must be greather than zero")
-    return
+    os.Exit(1)
   }
 
   client:= &http.Client{
@@ -58,31 +65,42 @@ func main() {
 
   if *requests <= 0 {
     fmt.Println("Error: requests must be greater than zero")
-    return
+    os.Exit(1)
   }
 
 	for i := 1; i <= *requests; i++ {
+
+    if i > 1 {
+      time.Sleep(*interval)
+    }
+
 		totalRequests++
 
 		fmt.Println("Request number:", i)
 
-		start := time.Now()
-
-		response, err := client.Get(*url)
-
-    time.Sleep(*interval)
-
-		duration := time.Since(start)
-
-		latencies = append(latencies, duration)
-
-		fmt.Println("Duration", duration)
+		req, err := http.NewRequest("GET",*url, nil)
 
 		if err != nil {
-			fmt.Println("Request failed:", err)
-			connectionErrors++
-			continue
-		}
+			fmt.Println("Request creation failed:", err)
+			os.Exit(1)
+    }
+
+    req.Host = *hostHeader
+
+    start := time.Now()
+
+    response, err := client.Do(req)
+
+    duration := time.Since(start)
+
+    latencies = append(latencies, duration)
+    fmt.Println("Duration", duration)
+
+    if err != nil {
+      fmt.Println("HTTP request failed:", err)
+      connectionErrors++
+      continue
+    }
 
 		if response.StatusCode >= 500 {
 			failedRequests++
@@ -164,4 +182,8 @@ func main() {
 	fmt.Println("Minimum latency:", minLatency)
 	fmt.Println("Maximum latency:", maxLatency)
 	fmt.Println("P95 latency:", p95Latency)
+
+  if totalFailures > 0 {
+    os.Exit(1)
+  }
 }
