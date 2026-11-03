@@ -45,14 +45,14 @@ func main() {
 
 	hostHeader := flag.String(
 		"host-header",
-		"podinfo.lab.test",
+		"",
 		"HTTP Host header for Ingress routing",
 	)
 
 	flag.Parse()
 
 	if *timeout <= 0 {
-		fmt.Println("Error: timeout must be greather than zero")
+		fmt.Println("Error: timeout must be greater than zero")
 		os.Exit(1)
 	}
 
@@ -65,6 +65,11 @@ func main() {
 
 	if *requests <= 0 {
 		fmt.Println("Error: requests must be greater than zero")
+		os.Exit(1)
+	}
+
+	if *interval < 0 {
+		fmt.Println("Error: interval must not be negative")
 		os.Exit(1)
 	}
 
@@ -85,7 +90,9 @@ func main() {
 			os.Exit(1)
 		}
 
-		req.Host = *hostHeader
+		if *hostHeader != "" {
+			req.Host = *hostHeader
+		}
 
 		start := time.Now()
 
@@ -156,16 +163,6 @@ func main() {
 		totalSuccessfulDuration += duration
 	}
 
-	averageSuccesfulLatency := time.Duration(0)
-
-	if len(successfulLatencies) > 0 {
-		averageSuccesfulLatency = totalSuccessfulDuration / time.Duration(len(successfulLatencies))
-
-		fmt.Println("Average successful latency:", averageSuccesfulLatency)
-	} else {
-		fmt.Println("Average successful latency: N/A")
-	}
-
 	if totalRequests > 0 {
 		failureRate = (float64(totalFailures) / float64(totalRequests)) * 100
 	}
@@ -179,6 +176,14 @@ func main() {
 	fmt.Println("Failure Rate:", failureRate, "%")
 	fmt.Println("Average latency:", averageLatency)
 	fmt.Println("Total successful duration:", totalSuccessfulDuration)
+
+	if len(successfulLatencies) > 0 {
+		averageSuccessfulLatency := totalSuccessfulDuration / time.Duration(len(successfulLatencies))
+		fmt.Println("Average successful latency:", averageSuccessfulLatency)
+	} else {
+		fmt.Println("Average successful latency: N/A")
+	}
+
 	fmt.Println("Minimum latency:", minLatency)
 	fmt.Println("Maximum latency:", maxLatency)
 	fmt.Println("P95 latency:", p95Latency)
