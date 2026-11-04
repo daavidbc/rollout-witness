@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+type RequestResult struct {
+	Timestamp  time.Time
+	StatusCode int
+	Duration   time.Duration
+	Error      string
+}
+
 func main() {
 	fmt.Println("Rollout Witness starting...")
 
@@ -62,6 +69,7 @@ func main() {
 
 	latencies := []time.Duration{}
 	successfulLatencies := []time.Duration{}
+	results := []RequestResult{}
 
 	if *requests <= 0 {
 		fmt.Println("Error: requests must be greater than zero")
@@ -74,6 +82,11 @@ func main() {
 	}
 
 	for i := 1; i <= *requests; i++ {
+		result := RequestsResult{
+			Timestamp: time.Now(),
+		}
+
+		fmt.Println(result.Timestamp)
 
 		if i > 1 {
 			time.Sleep(*interval)
@@ -99,6 +112,15 @@ func main() {
 		response, err := client.Do(req)
 
 		duration := time.Since(start)
+
+		result := RequestResult{
+			Timestamp:  time.Now(),
+			StatusCode: response.StatusCode,
+			Duration:   duration,
+			Error:      "",
+		}
+
+		results = append(results, result)
 
 		latencies = append(latencies, duration)
 		fmt.Println("Duration", duration)
