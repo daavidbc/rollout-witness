@@ -82,11 +82,6 @@ func main() {
 	}
 
 	for i := 1; i <= *requests; i++ {
-		result := RequestsResult{
-			Timestamp: time.Now(),
-		}
-
-		fmt.Println(result.Timestamp)
 
 		if i > 1 {
 			time.Sleep(*interval)
@@ -108,28 +103,34 @@ func main() {
 		}
 
 		start := time.Now()
-
-		response, err := client.Do(req)
-
-		duration := time.Since(start)
-
 		result := RequestResult{
-			Timestamp:  time.Now(),
-			StatusCode: response.StatusCode,
-			Duration:   duration,
-			Error:      "",
+			Timestamp: start,
 		}
 
-		results = append(results, result)
+		response, err := client.Do(req)
+		duration := time.Since(start)
+
+		result.Duration = duration
+
+		result = RequestResult{
+			Timestamp: time.Now(),
+		}
+
+		fmt.Println(result.Timestamp)
 
 		latencies = append(latencies, duration)
 		fmt.Println("Duration", duration)
 
 		if err != nil {
+			result.Error = err.Error()
+			results = append(results, result)
 			fmt.Println("HTTP request failed:", err)
 			connectionErrors++
 			continue
 		}
+
+		result.StatusCode = response.StatusCode
+		results = append(results, result)
 
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
 			successfulRequests++
