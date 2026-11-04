@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+type RequestResult struct {
+	Timestamp  time.Time
+	StatusCode int
+	Duration   time.Duration
+	Error      string
+}
+
 func main() {
 	fmt.Println("Rollout Witness starting...")
 
@@ -62,6 +69,7 @@ func main() {
 
 	latencies := []time.Duration{}
 	successfulLatencies := []time.Duration{}
+	results := []RequestResult{}
 
 	if *requests <= 0 {
 		fmt.Println("Error: requests must be greater than zero")
@@ -95,19 +103,34 @@ func main() {
 		}
 
 		start := time.Now()
+		result := RequestResult{
+			Timestamp: start,
+		}
 
 		response, err := client.Do(req)
-
 		duration := time.Since(start)
+
+		result.Duration = duration
+
+		result = RequestResult{
+			Timestamp: time.Now(),
+		}
+
+		fmt.Println(result.Timestamp)
 
 		latencies = append(latencies, duration)
 		fmt.Println("Duration", duration)
 
 		if err != nil {
+			result.Error = err.Error()
+			results = append(results, result)
 			fmt.Println("HTTP request failed:", err)
 			connectionErrors++
 			continue
 		}
+
+		result.StatusCode = response.StatusCode
+		results = append(results, result)
 
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
 			successfulRequests++
