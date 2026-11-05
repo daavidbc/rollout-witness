@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"math"
@@ -11,10 +12,10 @@ import (
 )
 
 type RequestResult struct {
-	Timestamp  time.Time
-	StatusCode int
-	Duration   time.Duration
-	Error      string
+	Timestamp  time.Time `json:"timestamp"`
+	StatusCode int       `json:"status_code"`
+	DurationMs float64   `json:"duration_ms"`
+	Error      string    `json:"error"`
 }
 
 func main() {
@@ -56,7 +57,20 @@ func main() {
 		"HTTP Host header for Ingress routing",
 	)
 
+	output := flag.String(
+		"output",
+		"evidence.jsonl",
+		"Path to JSONL evidence file",
+	)
+
 	flag.Parse()
+
+	file, err := os.Create(*output)
+
+	if err != nil {
+		fmt.Println("Failed to create evidence file:", err)
+		os.Exit(1)
+	}
 
 	if *timeout <= 0 {
 		fmt.Println("Error: timeout must be greater than zero")
@@ -103,6 +117,7 @@ func main() {
 		}
 
 		start := time.Now()
+
 		result := RequestResult{
 			Timestamp: start,
 		}
@@ -110,13 +125,7 @@ func main() {
 		response, err := client.Do(req)
 		duration := time.Since(start)
 
-		result.Duration = duration
-
-		result = RequestResult{
-			Timestamp: time.Now(),
-		}
-
-		fmt.Println(result.Timestamp)
+		result.DurationMs = math.Round(duration.Seconds()*1000*1000) / 1000
 
 		latencies = append(latencies, duration)
 		fmt.Println("Duration", duration)
@@ -141,6 +150,28 @@ func main() {
 
 		fmt.Println("HTTP status:", response.StatusCode)
 		response.Body.Close()
+	}
+
+	fmt.Println("Recorded results:", len(results))
+
+	for _, result := range results {
+		data, err := json.Marshal(result)
+
+		if err != nil {
+			fmt.Println("JSON encoding failed:", err)
+			os.Exit(1)
+		}
+
+		if _, err := file.Write(append(data, '\n')); err != nil {
+			fmt.Println("Failed to write evidence:", err)
+			os.Exit(1)
+		}
+
+	}
+
+	if err := file.Close(); err != nil {
+		fmt.Println("Failed to close evidence file:", err)
+		os.Exit(1)
 	}
 
 	totalDuration := time.Duration(0)
@@ -214,4 +245,5 @@ func main() {
 	if totalFailures > 0 {
 		os.Exit(1)
 	}
+
 }
