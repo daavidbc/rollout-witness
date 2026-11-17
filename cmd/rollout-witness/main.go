@@ -18,6 +18,10 @@ type RequestResult struct {
 	Error      string    `json:"error"`
 }
 
+func isSuccessfulStatus(statusCode int) bool {
+	return statusCode >= 200 && statusCode < 300
+}
+
 func main() {
 	fmt.Println("Rollout Witness starting...")
 
@@ -141,7 +145,7 @@ func main() {
 		result.StatusCode = response.StatusCode
 		results = append(results, result)
 
-		if response.StatusCode >= 200 && response.StatusCode < 300 {
+		if isSuccessfulStatus(response.StatusCode) {
 			successfulRequests++
 			successfulLatencies = append(successfulLatencies, duration)
 		} else {
